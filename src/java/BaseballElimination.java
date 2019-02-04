@@ -24,7 +24,6 @@ public class BaseballElimination {
     private final int[][] games;
     private final int maxWin;
     private final ST<String, Bag<String>> gameGraph;
-    private boolean possible;
 
     // create a baseball division from given filename in format specified below
     public BaseballElimination(String filename) {
@@ -99,12 +98,11 @@ public class BaseballElimination {
             int t = teamsNumber + 1;
             result = new Bag<>();
             fillFlow(x, flow, s, t);
-            if (possible) {
-                FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
-                for (int i = 0; i < teamsNumber; i++) {
-                    if (fordFulkerson.inCut(i)) {
-                        result.add(teamsToNames[i]);
-                    }
+
+            FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
+            for (int i = 0; i < teamsNumber; i++) {
+                if (fordFulkerson.inCut(i)) {
+                    result.add(teamsToNames[i]);
                 }
             }
             gameGraph.put(team, result);
@@ -131,13 +129,12 @@ public class BaseballElimination {
     }
 
     private void fillFlow(int x, FlowNetwork flow, int s, int t) {
-        possible = true;
         int wrX = wins[x] + remaining[x];
         Set<Integer> set = new HashSet<>();
         int nextVertex = t + 1;
 
-        for (int i = 0; i < teamsNumber && possible; i++) {
-            for (int j = 0; j < teamsNumber && possible; j++) {
+        for (int i = 0; i < teamsNumber; i++) {
+            for (int j = 0; j < teamsNumber; j++) {
 
                 if (i == x || j == x) continue;
                 if (games[i][j] == 0) continue;
@@ -155,22 +152,14 @@ public class BaseballElimination {
 
                 if (!set.contains(i)) {
                     int capacity = wrX-wins[i];
-                    if (capacity < 0) {
-                        possible = false;
-                        continue;
-                    }
-                    edge = new FlowEdge(i, t, capacity);
+                    edge = new FlowEdge(i, t, (capacity < 0 ? 0 : capacity));
                     flow.addEdge(edge);
                     set.add(i);
                 }
 
                 if (!set.contains(j)) {
                     int capacity = wrX-wins[j];
-                    if (capacity < 0) {
-                        possible = false;
-                        continue;
-                    }
-                    edge = new FlowEdge(j, t, capacity);
+                    edge = new FlowEdge(j, t, (capacity < 0 ? 0 : capacity));
                     flow.addEdge(edge);
                     set.add(j);
                 }
