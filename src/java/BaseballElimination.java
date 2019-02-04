@@ -174,7 +174,7 @@ public class BaseballElimination {
 
     private String[] getTokens(In input) {
         StringTokenizer st = new StringTokenizer(input.readLine(), " ");
-        String[] tmpTokens = new String[teamsNumber * teamsNumber];
+        String[] tmpTokens = new String[st.countTokens()];
 
         int i = 0;
         while (st.hasMoreTokens()) {
