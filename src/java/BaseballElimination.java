@@ -83,7 +83,7 @@ public class BaseballElimination {
         Bag<String> result;
         if (!gameGraph.contains(team)) {
 
-            result = retrieveСertificate(x);
+            result = retrieveSequence(x);
 
             gameGraph.put(team, result);
         } else {
@@ -109,7 +109,7 @@ public class BaseballElimination {
         }
     }
 
-    private Bag<String> retrieveСertificate(int x) {
+    private Bag<String> retrieveSequence(int x) {
 
         int s = teamsNumber;
         int t = teamsNumber + 1;
