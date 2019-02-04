@@ -19,7 +19,6 @@ public class BaseballElimination {
     private final int[] losses;
     private final int[] remaining;
     private final int[][] games;
-    private final int maxWin;
     private final ST<String, Bag<String>> gameGraph;
 
     // create a baseball division from given filename in format specified below
@@ -37,12 +36,9 @@ public class BaseballElimination {
         remaining = new int[teamsNumber];
         games = new int[teamsNumber][teamsNumber];
         gameGraph = new ST<>();
-        int m = -1;
         for (int i = 0; i < teamsNumber; i++) {
             setData(getTokens(input), i);
-            if (m < wins[i]) m = wins[i];
         }
-        maxWin = m;
     }
 
     // number of teamsToIndex
@@ -77,8 +73,6 @@ public class BaseballElimination {
 
     // is given team eliminated?
     public boolean isEliminated(String team) {
-        int x = getIndex(team);
-        if (wins[x] + remaining[x] < maxWin) return true;
 
         return certificateOfElimination(team) != null;
     }
@@ -89,7 +83,7 @@ public class BaseballElimination {
         Bag<String> result;
         if (!gameGraph.contains(team)) {
 
-            result = retrieveSertificate(x);
+            result = retrieveСertificate(x);
 
             gameGraph.put(team, result);
         } else {
@@ -102,6 +96,7 @@ public class BaseballElimination {
     public static void main(String[] args) {
         BaseballElimination division = new BaseballElimination(args[0]);
         for (String team : division.teams()) {
+            if (!team.equals("Houston")) continue;
             if (division.isEliminated(team)) {
                 StdOut.print(team + " is eliminated by the subset R = { ");
                 for (String t : division.certificateOfElimination(team)) {
@@ -114,7 +109,7 @@ public class BaseballElimination {
         }
     }
 
-    private Bag<String> retrieveSertificate(int x) {
+    private Bag<String> retrieveСertificate(int x) {
 
         int s = teamsNumber;
         int t = teamsNumber + 1;
@@ -126,7 +121,7 @@ public class BaseballElimination {
         Bag<String> result = new Bag<>();
 
         for (int i = 0; i < teamsNumber && !complete; i++) {
-            for (int j = 0; j < teamsNumber && !complete; j++) {
+            for (int j = 0; j < teamsNumber; j++) {
 
                 if (i == x || j == x || games[i][j] == 0 || j < i) continue;
 
@@ -142,25 +137,17 @@ public class BaseballElimination {
                 edge = new FlowEdge(combinedNode, j, Double.POSITIVE_INFINITY);
                 flow.addEdge(edge);
 
-                int capacity = wrX-wins[i];
-                if (capacity < 0) {
-                    result.add(teamsToNames[i]);
-                    complete = true;
-                    continue;
-                }
-                edge = new FlowEdge(i, t, capacity);
-                flow.addEdge(edge);
-
-                capacity = wrX-wins[j];
-                if (capacity < 0) {
-                    result.add(teamsToNames[j]);
-                    complete = true;
-                    continue;
-                }
-                edge = new FlowEdge(j, t, capacity);
-                flow.addEdge(edge);
             }
+            int capacity = wrX-wins[i];
+            if (capacity < 0) {
+                result.add(teamsToNames[i]);
+                complete = true;
+                continue;
+            }
+            FlowEdge edge = new FlowEdge(i, t, capacity);
+            flow.addEdge(edge);
         }
+
         FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
         if (sum != fordFulkerson.value() && !complete) {
             for (int i = 0; i < teamsNumber; i++) {
