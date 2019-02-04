@@ -1,13 +1,22 @@
-import edu.princeton.cs.algs4.*;
+import edu.princeton.cs.algs4.ST;
+import edu.princeton.cs.algs4.Bag;
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.FlowNetwork;
+import edu.princeton.cs.algs4.FordFulkerson;
+import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.FlowEdge;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.StringTokenizer;
 
 
 public class BaseballElimination {
 
     private final int teamsNumber;
-    private final ST<String, Integer> teams;
-    private final String[] _teams;
+    private final ST<String, Integer> teamsToIndex;
+    private final String[] teamsToNames;
     private final int[] wins;
     private final int[] losses;
     private final int[] remaining;
@@ -21,10 +30,10 @@ public class BaseballElimination {
 
         In input = new In(filename);
 
-        teamsNumber = Integer.valueOf(input.readLine().trim());
+        teamsNumber = Integer.parseInt(input.readLine().trim());
 
-        teams = new ST<>();
-        _teams = new String[teamsNumber];
+        teamsToIndex = new ST<>();
+        teamsToNames = new String[teamsNumber];
         wins = new int[teamsNumber];
         losses = new int[teamsNumber];
         remaining = new int[teamsNumber];
@@ -38,14 +47,14 @@ public class BaseballElimination {
         maxWin = m;
     }
 
-    // number of teams
+    // number of teamsToIndex
     public int numberOfTeams() {
-        return teams.size();
+        return teamsToIndex.size();
     }
 
-    // all teams
+    // all teamsToIndex
     public Iterable<String> teams() {
-        return teams.keys();
+        return teamsToIndex.keys();
     }
 
     // number of wins for given team
@@ -76,11 +85,11 @@ public class BaseballElimination {
         return certificateOfElimination(team) != null;
     }
 
-    // subset R of teams that eliminates given team; null if not eliminated
+    // subset R of teamsToIndex that eliminates given team; null if not eliminated
     public Iterable<String> certificateOfElimination(String team) {
         int x = getIndex(team);
         Bag<String> result;
-        if ( ! gameGraph.contains(team)) {
+        if (!gameGraph.contains(team)) {
 
             FlowNetwork flow = new FlowNetwork(teamsNumber * teamsNumber + 2);
 
@@ -89,9 +98,9 @@ public class BaseballElimination {
             fillFlow(x, flow, s, t);
             FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
             result = new Bag<>();
-            for (int i=0; i<teamsNumber; i++) {
+            for (int i = 0; i < teamsNumber; i++) {
                 if (fordFulkerson.inCut(i)) {
-                    result.add(_teams[i]);
+                    result.add(teamsToNames[i]);
                 }
             }
             gameGraph.put(team, result);
@@ -121,10 +130,10 @@ public class BaseballElimination {
 
         int wrX = wins[x] + remaining[x];
         Set<Integer> set = new HashSet<>();
-        int nextVertex = t+1;
+        int nextVertex = t + 1;
 
-        for (int i=0; i<teamsNumber; i++) {
-            for (int j=0; j<teamsNumber; j++) {
+        for (int i = 0; i < teamsNumber; i++) {
+            for (int j = 0; j < teamsNumber; j++) {
 
                 if (i == x || j == x) continue;
                 if (games[i][j] == 0) continue;
@@ -140,14 +149,14 @@ public class BaseballElimination {
                 edge = new FlowEdge(combinedNode, j, Double.POSITIVE_INFINITY);
                 flow.addEdge(edge);
 
-                if ( ! set.contains(i)) {
+                if (!set.contains(i)) {
                     int capacity = wrX-wins[i];
                     edge = new FlowEdge(i, t, capacity < 0 ? 0 : capacity);
                     flow.addEdge(edge);
                     set.add(i);
                 }
 
-                if ( ! set.contains(j)) {
+                if (!set.contains(j)) {
                     int capacity = wrX-wins[j];
                     edge = new FlowEdge(j, t, capacity < 0 ? 0 : capacity);
                     flow.addEdge(edge);
@@ -177,21 +186,21 @@ public class BaseballElimination {
 
     private Integer getIndex(String team) {
         throwExceptionIfNull(team);
-        Integer i = teams.get(team);
+        Integer i = teamsToIndex.get(team);
         throwExceptionIfNull(i);
         return i;
     }
 
     private void setData(String[] tokens, int i) {
 
-        teams.put(tokens[0], i);
-        _teams[i] = tokens[0];
-        wins[i] = Integer.valueOf(tokens[1]);
-        losses[i] = Integer.valueOf(tokens[2]);
-        remaining[i] = Integer.valueOf(tokens[3]);
+        teamsToIndex.put(tokens[0], i);
+        teamsToNames[i] = tokens[0];
+        wins[i] = Integer.parseInt(tokens[1]);
+        losses[i] = Integer.parseInt(tokens[2]);
+        remaining[i] = Integer.parseInt(tokens[3]);
 
-        for (int j=4; j < tokens.length; j++) {
-            games[i][j-4] = Integer.valueOf(tokens[j]);
+        for (int j = 4; j < tokens.length; j++) {
+            games[i][j - 4] = Integer.parseInt(tokens[j]);
         }
     }
 }
