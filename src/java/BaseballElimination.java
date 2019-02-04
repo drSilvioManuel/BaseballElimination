@@ -1,11 +1,11 @@
 import edu.princeton.cs.algs4.*;
-import sun.util.resources.cldr.ti.CurrencyNames_ti;
 
 import java.util.*;
 
 
 class BaseballElimination {
 
+    private final int teamsNumber;
     private final ST<String, Integer> teams;
     private final String[] _teams;
     private final int[] wins;
@@ -14,7 +14,6 @@ class BaseballElimination {
     private final int[][] games;
     private final int maxWin;
     private final ST<String, Bag<String>> gameGraph;
-    private final int[] vertexCapacity;
 
     // create a baseball division from given filename in format specified below
     public BaseballElimination(String filename) {
@@ -22,19 +21,17 @@ class BaseballElimination {
 
         In input = new In(filename);
 
-        int teamsNumber = Integer.valueOf(input.readLine().trim());
+        teamsNumber = Integer.valueOf(input.readLine().trim());
 
         teams = new ST<>();
         _teams = new String[teamsNumber];
         wins = new int[teamsNumber];
         losses = new int[teamsNumber];
         remaining = new int[teamsNumber];
-        vertexCapacity = new int[teamsNumber];
         games = new int[teamsNumber][teamsNumber];
         gameGraph = new ST<>();
         int m = -1;
         for (int i = 0; i < teamsNumber; i++) {
-            vertexCapacity[i] = teamsNumber+2;
             setData(getTokens(input), i);
             if (m < wins[i]) m = wins[i];
         }
@@ -85,14 +82,14 @@ class BaseballElimination {
         Bag<String> result;
         if ( ! gameGraph.contains(team)) {
 
-            FlowNetwork flow = new FlowNetwork(vertexCapacity[x]);
+            FlowNetwork flow = new FlowNetwork(teamsNumber * teamsNumber + 2);
 
-            int s = wins.length;
-            int t = wins.length + 1;
+            int s = teamsNumber;
+            int t = teamsNumber + 1;
             fillFlow(x, flow, s, t);
             FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
             result = new Bag<>();
-            for (int i=0; i<wins.length; i++) {
+            for (int i=0; i<teamsNumber; i++) {
                 if (fordFulkerson.inCut(i)) {
                     result.add(_teams[i]);
                 }
@@ -124,14 +121,15 @@ class BaseballElimination {
 
         int wrX = wins[x] + remaining[x];
         Set<Integer> set = new HashSet<>();
+        int nextVertex = t+1;
 
-        for (int i=0; i<wins.length; i++) {
-            for (int j=0; j<wins.length; j++) {
+        for (int i=0; i<teamsNumber; i++) {
+            for (int j=0; j<teamsNumber; j++) {
 
                 if (i == x || j == x) continue;
                 if (games[i][j] == 0) continue;
 
-                int combinedNode = makeCombinedNode(i, j);
+                int combinedNode = nextVertex++;
 
                 FlowEdge edge = new FlowEdge(s, combinedNode, games[i][j]);
                 flow.addEdge(edge);
@@ -143,13 +141,15 @@ class BaseballElimination {
                 flow.addEdge(edge);
 
                 if ( ! set.contains(i)) {
-                    edge = new FlowEdge(i, t, wrX-wins[i]);
+                    int capacity = wrX-wins[i];
+                    edge = new FlowEdge(i, t, capacity < 0 ? 0 : capacity);
                     flow.addEdge(edge);
                     set.add(i);
                 }
 
                 if ( ! set.contains(j)) {
-                    edge = new FlowEdge(j, t, wrX-wins[j]);
+                    int capacity = wrX-wins[j];
+                    edge = new FlowEdge(j, t, capacity < 0 ? 0 : capacity);
                     flow.addEdge(edge);
                     set.add(j);
                 }
@@ -157,20 +157,17 @@ class BaseballElimination {
         }
     }
 
-    private int makeCombinedNode(int a, int b) {
-        int ab = a;
-        ab = (ab << 16) | b;
-        return ab;
-    }
-
-    private int[] splitCombinedNode(int ab) {
-        int a = ab >> 16;
-        int b = ((ab << 16) >> 16);
-        return new int[] {a, b};
-    }
-
     private String[] getTokens(In input) {
-        return input.readLine().trim().split(" ");
+        StringTokenizer st = new StringTokenizer(input.readLine(), " ");
+        String[] tmpTokens = new String[teamsNumber + 4];
+
+        int i=0;
+        while (st.hasMoreTokens()) {
+            String token = st.nextToken();
+            if (token.equals("")) continue;
+            tmpTokens[i++] = token;
+        }
+        return Arrays.copyOfRange(tmpTokens, 0, i);
     }
 
     private static void throwExceptionIfNull(Object... args) {
@@ -195,7 +192,6 @@ class BaseballElimination {
 
         for (int j=4; j < tokens.length; j++) {
             games[i][j-4] = Integer.valueOf(tokens[j]);
-            if (games[i][i-4] != 0) vertexCapacity[i]++;
         }
     }
 }
