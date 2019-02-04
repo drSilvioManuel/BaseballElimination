@@ -14,6 +14,7 @@ import java.util.StringTokenizer;
 
 public class BaseballElimination {
 
+    private static final int GAME_INDEX = 4;
     private final int teamsNumber;
     private final ST<String, Integer> teamsToIndex;
     private final String[] teamsToNames;
@@ -23,14 +24,15 @@ public class BaseballElimination {
     private final int[][] games;
     private final int maxWin;
     private final ST<String, Bag<String>> gameGraph;
+    private boolean possible;
 
     // create a baseball division from given filename in format specified below
     public BaseballElimination(String filename) {
         throwExceptionIfNull(filename);
 
         In input = new In(filename);
-
-        teamsNumber = Integer.parseInt(input.readLine().trim());
+        String line = input.readLine();
+        teamsNumber = null != line ? Integer.parseInt(line.trim()) : 0;
 
         teamsToIndex = new ST<>();
         teamsToNames = new String[teamsNumber];
@@ -95,12 +97,14 @@ public class BaseballElimination {
 
             int s = teamsNumber;
             int t = teamsNumber + 1;
-            fillFlow(x, flow, s, t);
-            FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
             result = new Bag<>();
-            for (int i = 0; i < teamsNumber; i++) {
-                if (fordFulkerson.inCut(i)) {
-                    result.add(teamsToNames[i]);
+            fillFlow(x, flow, s, t);
+            if (possible) {
+                FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
+                for (int i = 0; i < teamsNumber; i++) {
+                    if (fordFulkerson.inCut(i)) {
+                        result.add(teamsToNames[i]);
+                    }
                 }
             }
             gameGraph.put(team, result);
@@ -108,7 +112,7 @@ public class BaseballElimination {
             result = gameGraph.get(team);
         }
 
-        return result.isEmpty() ? null: result;
+        return result.isEmpty() ? null : result;
     }
 
     public static void main(String[] args) {
@@ -127,13 +131,13 @@ public class BaseballElimination {
     }
 
     private void fillFlow(int x, FlowNetwork flow, int s, int t) {
-
+        possible = true;
         int wrX = wins[x] + remaining[x];
         Set<Integer> set = new HashSet<>();
         int nextVertex = t + 1;
 
-        for (int i = 0; i < teamsNumber; i++) {
-            for (int j = 0; j < teamsNumber; j++) {
+        for (int i = 0; i < teamsNumber && possible; i++) {
+            for (int j = 0; j < teamsNumber && possible; j++) {
 
                 if (i == x || j == x) continue;
                 if (games[i][j] == 0) continue;
@@ -151,14 +155,22 @@ public class BaseballElimination {
 
                 if (!set.contains(i)) {
                     int capacity = wrX-wins[i];
-                    edge = new FlowEdge(i, t, capacity < 0 ? 0 : capacity);
+                    if (capacity < 0) {
+                        possible = false;
+                        continue;
+                    }
+                    edge = new FlowEdge(i, t, capacity);
                     flow.addEdge(edge);
                     set.add(i);
                 }
 
                 if (!set.contains(j)) {
                     int capacity = wrX-wins[j];
-                    edge = new FlowEdge(j, t, capacity < 0 ? 0 : capacity);
+                    if (capacity < 0) {
+                        possible = false;
+                        continue;
+                    }
+                    edge = new FlowEdge(j, t, capacity);
                     flow.addEdge(edge);
                     set.add(j);
                 }
@@ -168,9 +180,9 @@ public class BaseballElimination {
 
     private String[] getTokens(In input) {
         StringTokenizer st = new StringTokenizer(input.readLine(), " ");
-        String[] tmpTokens = new String[teamsNumber + 4];
+        String[] tmpTokens = new String[teamsNumber + GAME_INDEX];
 
-        int i=0;
+        int i = 0;
         while (st.hasMoreTokens()) {
             String token = st.nextToken();
             if (token.equals("")) continue;
@@ -184,7 +196,7 @@ public class BaseballElimination {
             if (arg == null) throw new IllegalArgumentException();
     }
 
-    private Integer getIndex(String team) {
+    private int getIndex(String team) {
         throwExceptionIfNull(team);
         Integer i = teamsToIndex.get(team);
         throwExceptionIfNull(i);
@@ -199,8 +211,8 @@ public class BaseballElimination {
         losses[i] = Integer.parseInt(tokens[2]);
         remaining[i] = Integer.parseInt(tokens[3]);
 
-        for (int j = 4; j < tokens.length; j++) {
-            games[i][j - 4] = Integer.parseInt(tokens[j]);
+        for (int j = GAME_INDEX; j < tokens.length; j++) {
+            games[i][j - GAME_INDEX] = Integer.parseInt(tokens[j]);
         }
     }
 }
