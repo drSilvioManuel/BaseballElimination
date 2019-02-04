@@ -146,6 +146,7 @@ public class BaseballElimination {
                 if (capacity < 0) {
                     result.add(teamsToNames[i]);
                     complete = true;
+                    continue;
                 }
                 edge = new FlowEdge(i, t, capacity);
                 flow.addEdge(edge);
@@ -154,6 +155,7 @@ public class BaseballElimination {
                 if (capacity < 0) {
                     result.add(teamsToNames[j]);
                     complete = true;
+                    continue;
                 }
                 edge = new FlowEdge(j, t, capacity);
                 flow.addEdge(edge);
@@ -203,7 +205,7 @@ public class BaseballElimination {
         losses[i] = Integer.parseInt(tokens[++index]);
         remaining[i] = Integer.parseInt(tokens[++index]);
 
-        for (int j = index; j < tokens.length; j++) {
+        for (int j = ++index; j < tokens.length; j++) {
             games[i][j - index] = Integer.parseInt(tokens[j]);
         }
     }
