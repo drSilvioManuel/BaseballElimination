@@ -3,7 +3,7 @@ import edu.princeton.cs.algs4.*;
 import java.util.*;
 
 
-class BaseballElimination {
+public class BaseballElimination {
 
     private final int teamsNumber;
     private final ST<String, Integer> teams;
