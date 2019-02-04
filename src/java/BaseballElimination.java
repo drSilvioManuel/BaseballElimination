@@ -75,9 +75,8 @@ class BaseballElimination {
     public boolean isEliminated(String team) {
         int x = getIndex(team);
         if (wins[x] + remaining[x] < maxWin) return true;
-        Bag<String> r = (Bag<String>) certificateOfElimination(team);
 
-        return r.isEmpty();
+        return certificateOfElimination(team) != null;
     }
 
     // subset R of teams that eliminates given team; null if not eliminated
@@ -103,7 +102,7 @@ class BaseballElimination {
             result = gameGraph.get(team);
         }
 
-        return result;
+        return result.isEmpty() ? null: result;
     }
 
     public static void main(String[] args) {
