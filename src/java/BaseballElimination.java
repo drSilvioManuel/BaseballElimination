@@ -7,14 +7,11 @@ import edu.princeton.cs.algs4.StdOut;
 import edu.princeton.cs.algs4.FlowEdge;
 
 import java.util.Arrays;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.StringTokenizer;
 
 
 public class BaseballElimination {
 
-    private static final int GAME_INDEX = 4;
     private final int teamsNumber;
     private final ST<String, Integer> teamsToIndex;
     private final String[] teamsToNames;
@@ -92,19 +89,8 @@ public class BaseballElimination {
         Bag<String> result;
         if (!gameGraph.contains(team)) {
 
-            FlowNetwork flow = new FlowNetwork(teamsNumber * teamsNumber + 2);
+            result = retrieveSertificate(x);
 
-            int s = teamsNumber;
-            int t = teamsNumber + 1;
-            result = new Bag<>();
-            fillFlow(x, flow, s, t);
-
-            FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
-            for (int i = 0; i < teamsNumber; i++) {
-                if (fordFulkerson.inCut(i)) {
-                    result.add(teamsToNames[i]);
-                }
-            }
             gameGraph.put(team, result);
         } else {
             result = gameGraph.get(team);
@@ -128,18 +114,24 @@ public class BaseballElimination {
         }
     }
 
-    private void fillFlow(int x, FlowNetwork flow, int s, int t) {
+    private Bag<String> retrieveSertificate(int x) {
+
+        int s = teamsNumber;
+        int t = teamsNumber + 1;
         int wrX = wins[x] + remaining[x];
-        Set<Integer> set = new HashSet<>();
         int nextVertex = t + 1;
+        int sum = 0;
+        boolean complete = false;
+        FlowNetwork flow = new FlowNetwork(teamsNumber * teamsNumber + 2);
+        Bag<String> result = new Bag<>();
 
-        for (int i = 0; i < teamsNumber; i++) {
-            for (int j = 0; j < teamsNumber; j++) {
+        for (int i = 0; i < teamsNumber && !complete; i++) {
+            for (int j = 0; j < teamsNumber && !complete; j++) {
 
-                if (i == x || j == x) continue;
-                if (games[i][j] == 0) continue;
+                if (i == x || j == x || games[i][j] == 0 || j < i) continue;
 
                 int combinedNode = nextVertex++;
+                sum += games[i][j];
 
                 FlowEdge edge = new FlowEdge(s, combinedNode, games[i][j]);
                 flow.addEdge(edge);
@@ -150,26 +142,37 @@ public class BaseballElimination {
                 edge = new FlowEdge(combinedNode, j, Double.POSITIVE_INFINITY);
                 flow.addEdge(edge);
 
-                if (!set.contains(i)) {
-                    int capacity = wrX-wins[i];
-                    edge = new FlowEdge(i, t, (capacity < 0 ? 0 : capacity));
-                    flow.addEdge(edge);
-                    set.add(i);
+                int capacity = wrX-wins[i];
+                if (capacity < 0) {
+                    result.add(teamsToNames[i]);
+                    complete = true;
                 }
+                edge = new FlowEdge(i, t, capacity);
+                flow.addEdge(edge);
 
-                if (!set.contains(j)) {
-                    int capacity = wrX-wins[j];
-                    edge = new FlowEdge(j, t, (capacity < 0 ? 0 : capacity));
-                    flow.addEdge(edge);
-                    set.add(j);
+                capacity = wrX-wins[j];
+                if (capacity < 0) {
+                    result.add(teamsToNames[j]);
+                    complete = true;
                 }
+                edge = new FlowEdge(j, t, capacity);
+                flow.addEdge(edge);
             }
         }
+        FordFulkerson fordFulkerson = new FordFulkerson(flow, s, t);
+        if (sum != fordFulkerson.value() && !complete) {
+            for (int i = 0; i < teamsNumber; i++) {
+
+                if (fordFulkerson.inCut(i)) result.add(teamsToNames[i]);
+            }
+        }
+
+        return result;
     }
 
     private String[] getTokens(In input) {
         StringTokenizer st = new StringTokenizer(input.readLine(), " ");
-        String[] tmpTokens = new String[teamsNumber + GAME_INDEX];
+        String[] tmpTokens = new String[teamsNumber * teamsNumber];
 
         int i = 0;
         while (st.hasMoreTokens()) {
@@ -193,15 +196,15 @@ public class BaseballElimination {
     }
 
     private void setData(String[] tokens, int i) {
+        int index = 0;
+        teamsToIndex.put(tokens[index], i);
+        teamsToNames[i] = tokens[index];
+        wins[i] = Integer.parseInt(tokens[++index]);
+        losses[i] = Integer.parseInt(tokens[++index]);
+        remaining[i] = Integer.parseInt(tokens[++index]);
 
-        teamsToIndex.put(tokens[0], i);
-        teamsToNames[i] = tokens[0];
-        wins[i] = Integer.parseInt(tokens[1]);
-        losses[i] = Integer.parseInt(tokens[2]);
-        remaining[i] = Integer.parseInt(tokens[3]);
-
-        for (int j = GAME_INDEX; j < tokens.length; j++) {
-            games[i][j - GAME_INDEX] = Integer.parseInt(tokens[j]);
+        for (int j = index; j < tokens.length; j++) {
+            games[i][j - index] = Integer.parseInt(tokens[j]);
         }
     }
 }
